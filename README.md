@@ -65,7 +65,3 @@ Ensure all autograder tests pass for:
 ✅ Tries counter updates  
 ✅ For-loop creation  
 ✅ While-loop presence  
-
----
-
-**End of Assignment — Unit 8.4 Iteration: Guessing Game**
