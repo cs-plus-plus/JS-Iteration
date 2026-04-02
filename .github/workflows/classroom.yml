@@ -17,25 +17,16 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Jest + jsdom
+      - name: Install Jest
         run: |
           npm init -y >/dev/null 2>&1 || true
-          npm install --save-dev jest@29 jsdom@21 jest-environment-jsdom@29
-
-      - name: Write jest setup
-        run: |
-          cat > jest.setup.cjs <<'EOF'
-          const { TextEncoder, TextDecoder } = require('util');
-          if (typeof global.TextEncoder === 'undefined') global.TextEncoder = TextEncoder;
-          if (typeof global.TextDecoder === 'undefined') global.TextDecoder = TextDecoder;
-          EOF
+          npm install --save-dev jest@29
 
       - name: Write jest config
         run: |
           cat > jest.config.cjs <<'EOF'
           module.exports = {
-            testEnvironment: 'jsdom',
-            setupFiles: ['<rootDir>/jest.setup.cjs'],
+            testEnvironment: 'node',
             testMatch: ['**/__tests__/**/*.test.cjs']
           };
           EOF
@@ -43,141 +34,79 @@ jobs:
       - name: Write tests
         run: |
           mkdir -p __tests__
-          cat > __tests__/guessing-game.test.cjs <<'EOF'
+          cat > __tests__/iteration.test.cjs <<'TESTEOF'
           const fs = require('fs');
           const path = require('path');
-          const { JSDOM, VirtualConsole } = require('jsdom');
+          const vm = require('vm');
 
-          // --- Test Helpers ---
-          const wait = (ms = 30) => new Promise(r => setTimeout(r, ms));
-          const find = arr => arr.find(p => fs.existsSync(p)) || null;
-          const findIndex = () => find(['index.html','public/index.html','src/index.html','docs/index.html']);
-
-          function byId(doc, id) { return doc.getElementById(id); }
-          function text(doc, id) {
-            const el = byId(doc, id);
-            return (el?.textContent || el?.innerText || '').trim();
-          }
-          function setVal(doc, id, v) {
-            const el = byId(doc, id); if (!el) return false; el.value = String(v); return true;
-          }
-          function clickBtn(doc) {
-            const btn = doc.querySelector('button');
-            if (btn) btn.click();
-            return !!btn;
-          }
-
-          async function loadDOM() {
-            const idx = findIndex();
-            if (!idx) throw new Error('index.html not found (root/public/src/docs).');
-
-            const vconsole = new VirtualConsole();
-            vconsole.on('error', () => {}); // quiet CI
-
-            const baseDir = path.dirname(path.resolve(idx));
-            const baseUrl = 'file://' + baseDir.replace(/\\+/g, '/') + '/';
-
-            const dom = await JSDOM.fromFile(idx, {
-              url: baseUrl,
-              runScripts: 'dangerously',
-              resources: 'usable',
-              pretendToBeVisual: true,
-              virtualConsole: vconsole
-            });
-
-            // ban prompt/alert (must use DOM)
-            dom.window.prompt = () => { throw new Error('Use DOM inputs, not prompt().'); };
-            dom.window.alert  = () => { throw new Error('Use textContent, not alert().'); };
-
-            await new Promise(res => dom.window.addEventListener('load', res, { once: true }));
-            await wait();
-            return dom;
-          }
-
-          // Read script.js for static analysis
           const scriptPath = path.resolve(process.cwd(), 'script.js');
-          const source = fs.existsSync(scriptPath) ? fs.readFileSync(scriptPath, 'utf8') : "";
+          const source = fs.existsSync(scriptPath) ? fs.readFileSync(scriptPath, 'utf8') : '';
 
-          // --- Test Suite ---
-          describe('Unit 8.4 – Iteration: Guessing Game', () => {
-            let dom, window, document;
+          function runWithPrompt(inputValue) {
+            const alerts = [];
+            const sandbox = {
+              prompt: () => inputValue,
+              alert: (msg) => alerts.push(String(msg)),
+              console: { log: () => {}, error: () => {}, warn: () => {} },
+              parseInt,
+              parseFloat,
+              isNaN,
+              NaN,
+              undefined,
+              String,
+              Number,
+              Math,
+            };
+            vm.createContext(sandbox);
+            vm.runInContext(source, sandbox, { timeout: 5000 });
+            return alerts;
+          }
 
-            beforeAll(async () => {
-              dom = await loadDOM();
-              window = dom.window;
-              document = window.document;
-            });
+          describe('Unit 8.4 – Iteration', () => {
 
-            test('required HTML elements exist', () => {
-              ['guess', 'feedback', 'tries', 'hintList'].forEach(id =>
-                expect(document.getElementById(id)).not.toBeNull()
-              );
-              expect(document.querySelector('button')).not.toBeNull();
+            test('handles invalid input', () => {
+              const invalids = ['abc', '', ' ', '-1', '0', null, '3.5'];
+              for (const input of invalids) {
+                const alerts = runWithPrompt(input);
+                expect(alerts.length).toBeGreaterThanOrEqual(1);
+                expect(alerts[0]).toBe('Invalid input');
+              }
             });
 
             test('script.js uses a for loop', () => {
               expect(source).toMatch(/\bfor\s*\(/);
             });
 
-            test('for loop populates hintList with innerHTML', () => {
-              expect(source).toMatch(/innerHTML/);
-              const list = byId(document, 'hintList');
-              const items = list.querySelectorAll('li');
-              expect(items.length).toBeGreaterThanOrEqual(10);
-              const texts = Array.from(items).map(li => li.textContent.trim()).slice(0, 10);
-              expect(texts).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
+            test('lists numbers 1 to N for N=5', () => {
+              const alerts = runWithPrompt('5');
+              expect(alerts.length).toBeGreaterThanOrEqual(2);
+              expect(alerts[0]).toBe('1, 2, 3, 4, 5');
             });
 
-            test('handles invalid (out-of-range) input', async () => {
-              setVal(document, 'guess', '99');
-              clickBtn(document);
-              await wait();
-              const feedback = text(document, 'feedback').toLowerCase();
-              expect(feedback).not.toBe('');
-              expect(feedback).not.toContain('win');
-              expect(feedback).not.toContain('low');
-              expect(feedback).not.toContain('high');
+            test('calculates correct sum for N=5', () => {
+              const alerts = runWithPrompt('5');
+              expect(alerts.length).toBeGreaterThanOrEqual(2);
+              expect(alerts[1]).toBe('Sum: 15');
             });
 
-            test('game logic works and tries counter increments', async () => {
-              let count = 0;
-              let won = false;
-
-              // Brute-force the game by guessing 1 through 10
-              for (let i = 1; i <= 10; i++) {
-                count++;
-                setVal(document, 'guess', i);
-                clickBtn(document);
-                await wait();
-
-                const feedback = text(document, 'feedback').toLowerCase();
-                const tries = text(document, 'tries');
-
-                // Tries counter must update
-                expect(tries).toContain(String(count));
-
-                if (feedback.includes('win')) {
-                  won = true;
-                  break; // Stop guessing
-                }
-
-                // If not a win, must be a hint
-                expect(feedback).toMatch(/high|low/);
-              }
-
-              expect(won).toBe(true); // The game must be winnable
+            test('works correctly for N=3', () => {
+              const alerts = runWithPrompt('3');
+              expect(alerts.length).toBeGreaterThanOrEqual(2);
+              expect(alerts[0]).toBe('1, 2, 3');
+              expect(alerts[1]).toBe('Sum: 6');
             });
+
           });
-          EOF
+          TESTEOF
 
       # === Graded steps (sum to 100) ===
-      - id: t_required_elements
-        name: required HTML elements exist
+      - id: t_invalid
+        name: handles invalid input
         uses: classroom-resources/autograding-command-grader@v1
         with:
-          test-name: required HTML elements exist
+          test-name: handles invalid input
           setup-command: echo "ready"
-          command: npx jest --runInBand --testNamePattern "required HTML elements exist$"
+          command: npx jest --runInBand --testNamePattern "handles invalid input$"
           timeout: 60
           max-score: 20
 
@@ -191,37 +120,37 @@ jobs:
           timeout: 60
           max-score: 20
 
-      - id: t_innerhtml_list
-        name: for loop populates hintList with innerHTML
+      - id: t_list
+        name: lists numbers 1 to N
         uses: classroom-resources/autograding-command-grader@v1
         with:
-          test-name: for loop populates hintList with innerHTML
+          test-name: lists numbers 1 to N
           setup-command: echo "ready"
-          command: npx jest --runInBand --testNamePattern "for loop populates hintList with innerHTML$"
+          command: npx jest --runInBand --testNamePattern "lists numbers 1 to N for N=5$"
           timeout: 60
           max-score: 20
 
-      - id: t_invalid_input
-        name: handles invalid (out-of-range) input
+      - id: t_sum
+        name: calculates correct sum
         uses: classroom-resources/autograding-command-grader@v1
         with:
-          test-name: handles invalid (out-of-range) input
+          test-name: calculates correct sum
           setup-command: echo "ready"
-          command: npx jest --runInBand --testNamePattern "handles invalid \(out-of-range\) input$"
+          command: npx jest --runInBand --testNamePattern "calculates correct sum for N=5$"
           timeout: 60
-          max-score: 15
+          max-score: 20
 
-      - id: t_game_logic
-        name: game logic and tries counter work
+      - id: t_n3
+        name: works correctly for N=3
         uses: classroom-resources/autograding-command-grader@v1
         with:
-          test-name: game logic and tries counter work
+          test-name: works correctly for N=3
           setup-command: echo "ready"
-          command: npx jest --runInBand --testNamePattern "game logic works and tries counter increments$"
+          command: npx jest --runInBand --testNamePattern "works correctly for N=3$"
           timeout: 60
-          max-score: 25
+          max-score: 20
 
-      # Build & publish combined summary (console + Summary tab)
+      # Build & publish combined summary
       - name: Build & publish combined summary
         shell: bash
         run: |
@@ -233,19 +162,19 @@ jobs:
           const assertions = (jr.testResults||[]).flatMap(t => t.assertionResults || []);
 
           const wanted = [
-            "required HTML elements exist",
+            "handles invalid input",
             "script.js uses a for loop",
-            "for loop populates hintList with innerHTML",
-            "handles invalid (out-of-range) input",
-            "game logic works and tries counter increments"
+            "lists numbers 1 to N for N=5",
+            "calculates correct sum for N=5",
+            "works correctly for N=3"
           ];
 
           const weights = {
-            "required HTML elements exist": 20,
+            "handles invalid input": 20,
             "script.js uses a for loop": 20,
-            "for loop populates hintList with innerHTML": 20,
-            "handles invalid (out-of-range) input": 15,
-            "game logic works and tries counter increments": 25
+            "lists numbers 1 to N for N=5": 20,
+            "calculates correct sum for N=5": 20,
+            "works correctly for N=3": 20
           };
 
           const status = {};
@@ -275,15 +204,15 @@ jobs:
         id: prepEnv
         shell: bash
         run: |
-          echo "T_REQUIRED_ELEMENTS_RESULTS=${{ steps.t_required_elements.outputs.result }}" >> "$GITHUB_ENV"
-          echo "T_FOR_LOOP_RESULTS=${{ steps.t_for_loop.outputs.result }}"                   >> "$GITHUB_ENV"
-          echo "T_INNERHTML_LIST_RESULTS=${{ steps.t_innerhtml_list.outputs.result }}"         >> "$GITHUB_ENV"
-          echo "T_INVALID_INPUT_RESULTS=${{ steps.t_invalid_input.outputs.result }}"           >> "$GITHUB_ENV"
-          echo "T_GAME_LOGIC_RESULTS=${{ steps.t_game_logic.outputs.result }}"                 >> "$GITHUB_ENV"
+          echo "T_INVALID_RESULTS=${{ steps.t_invalid.outputs.result }}"     >> "$GITHUB_ENV"
+          echo "T_FOR_LOOP_RESULTS=${{ steps.t_for_loop.outputs.result }}"   >> "$GITHUB_ENV"
+          echo "T_LIST_RESULTS=${{ steps.t_list.outputs.result }}"           >> "$GITHUB_ENV"
+          echo "T_SUM_RESULTS=${{ steps.t_sum.outputs.result }}"             >> "$GITHUB_ENV"
+          echo "T_N3_RESULTS=${{ steps.t_n3.outputs.result }}"               >> "$GITHUB_ENV"
 
       # Report to Classroom
       - name: Report grades
         uses: classroom-resources/autograding-grading-reporter@v1
         with:
-          runners: 't_required_elements,t_for_loop,t_innerhtml_list,t_invalid_input,t_game_logic'
+          runners: 't_invalid,t_for_loop,t_list,t_sum,t_n3'
           token: ${{ github.token }}
