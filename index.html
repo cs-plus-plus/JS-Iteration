@@ -1,12 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>JS | Variables and Methods</title>
-    <script src="script.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit 8.4 Guessing Game</title>
 </head>
 <body>
-    <h1>Your html goes here...</h1>
-    <br>See the <a href="README.md">README</a> for project details
+
+  <h1>Guess the Number (1-10)</h1>
+
+  <p>Enter your guess:</p>
+  <input id="guess" type="number" min="1" max="10">
+  <button onclick="runJS()">Guess</button>
+
+  <p id="feedback"></p>
+  <p id="tries"></p>
+
+  <h3>Number Hint List:</h3>
+  <ol id="hintList"></ol>
+
+  <script src="script.js"></script>
 </body>
 </html>
