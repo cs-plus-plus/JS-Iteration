@@ -42,10 +42,16 @@ jobs:
           const scriptPath = path.resolve(process.cwd(), 'script.js');
           const source = fs.existsSync(scriptPath) ? fs.readFileSync(scriptPath, 'utf8') : '';
 
-          function runWithPrompt(inputValue) {
+          function runWithPrompts(inputs) {
             const alerts = [];
+            let callIndex = 0;
             const sandbox = {
-              prompt: () => inputValue,
+              prompt: () => {
+                if (callIndex < inputs.length) {
+                  return inputs[callIndex++];
+                }
+                return null;
+              },
               alert: (msg) => alerts.push(String(msg)),
               console: { log: () => {}, error: () => {}, warn: () => {} },
               parseInt,
@@ -64,13 +70,20 @@ jobs:
 
           describe('Unit 8.4 – Iteration', () => {
 
-            test('handles invalid input', () => {
-              const invalids = ['abc', '', ' ', '-1', '0', null];
-              for (const input of invalids) {
-                const alerts = runWithPrompt(input);
-                expect(alerts.length).toBeGreaterThanOrEqual(1);
-                expect(alerts[0]).toBe('Invalid input');
-              }
+            test('handles invalid input then accepts valid input', () => {
+              // Give invalid inputs first, then a valid one — the while loop should keep prompting
+              const alerts = runWithPrompts(['abc', '-1', '0', '3']);
+              // Should have alerted "Invalid input" for each bad input
+              expect(alerts[0]).toBe('Invalid input');
+              expect(alerts[1]).toBe('Invalid input');
+              expect(alerts[2]).toBe('Invalid input');
+              // Then should show the list and sum for 3
+              expect(alerts).toContain('1, 2, 3');
+              expect(alerts).toContain('Sum: 6');
+            });
+
+            test('script.js uses a while loop', () => {
+              expect(source).toMatch(/\bwhile\s*\(/);
             });
 
             test('script.js uses a for loop', () => {
@@ -78,19 +91,19 @@ jobs:
             });
 
             test('lists numbers 1 to N for N=5', () => {
-              const alerts = runWithPrompt('5');
+              const alerts = runWithPrompts(['5']);
               expect(alerts.length).toBeGreaterThanOrEqual(2);
               expect(alerts[0]).toBe('1, 2, 3, 4, 5');
             });
 
             test('calculates correct sum for N=5', () => {
-              const alerts = runWithPrompt('5');
+              const alerts = runWithPrompts(['5']);
               expect(alerts.length).toBeGreaterThanOrEqual(2);
               expect(alerts[1]).toBe('Sum: 15');
             });
 
             test('works correctly for N=3', () => {
-              const alerts = runWithPrompt('3');
+              const alerts = runWithPrompts(['3']);
               expect(alerts.length).toBeGreaterThanOrEqual(2);
               expect(alerts[0]).toBe('1, 2, 3');
               expect(alerts[1]).toBe('Sum: 6');
@@ -106,9 +119,19 @@ jobs:
         with:
           test-name: handles invalid input
           setup-command: echo "ready"
-          command: npx jest --runInBand --testNamePattern "handles invalid input$"
+          command: npx jest --runInBand --testNamePattern "handles invalid input then accepts valid input$"
           timeout: 60
           max-score: 20
+
+      - id: t_while_loop
+        name: script.js uses a while loop
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: script.js uses a while loop
+          setup-command: echo "ready"
+          command: npx jest --runInBand --testNamePattern "script.js uses a while loop$"
+          timeout: 60
+          max-score: 10
 
       - id: t_for_loop
         name: script.js uses a for loop
@@ -118,7 +141,7 @@ jobs:
           setup-command: echo "ready"
           command: npx jest --runInBand --testNamePattern "script.js uses a for loop$"
           timeout: 60
-          max-score: 20
+          max-score: 10
 
       - id: t_list
         name: lists numbers 1 to N
@@ -162,7 +185,8 @@ jobs:
           const assertions = (jr.testResults||[]).flatMap(t => t.assertionResults || []);
 
           const wanted = [
-            "handles invalid input",
+            "handles invalid input then accepts valid input",
+            "script.js uses a while loop",
             "script.js uses a for loop",
             "lists numbers 1 to N for N=5",
             "calculates correct sum for N=5",
@@ -170,8 +194,9 @@ jobs:
           ];
 
           const weights = {
-            "handles invalid input": 20,
-            "script.js uses a for loop": 20,
+            "handles invalid input then accepts valid input": 20,
+            "script.js uses a while loop": 10,
+            "script.js uses a for loop": 10,
             "lists numbers 1 to N for N=5": 20,
             "calculates correct sum for N=5": 20,
             "works correctly for N=3": 20
@@ -204,15 +229,16 @@ jobs:
         id: prepEnv
         shell: bash
         run: |
-          echo "T_INVALID_RESULTS=${{ steps.t_invalid.outputs.result }}"     >> "$GITHUB_ENV"
-          echo "T_FOR_LOOP_RESULTS=${{ steps.t_for_loop.outputs.result }}"   >> "$GITHUB_ENV"
-          echo "T_LIST_RESULTS=${{ steps.t_list.outputs.result }}"           >> "$GITHUB_ENV"
-          echo "T_SUM_RESULTS=${{ steps.t_sum.outputs.result }}"             >> "$GITHUB_ENV"
-          echo "T_N3_RESULTS=${{ steps.t_n3.outputs.result }}"               >> "$GITHUB_ENV"
+          echo "T_INVALID_RESULTS=${{ steps.t_invalid.outputs.result }}"         >> "$GITHUB_ENV"
+          echo "T_WHILE_LOOP_RESULTS=${{ steps.t_while_loop.outputs.result }}"   >> "$GITHUB_ENV"
+          echo "T_FOR_LOOP_RESULTS=${{ steps.t_for_loop.outputs.result }}"       >> "$GITHUB_ENV"
+          echo "T_LIST_RESULTS=${{ steps.t_list.outputs.result }}"               >> "$GITHUB_ENV"
+          echo "T_SUM_RESULTS=${{ steps.t_sum.outputs.result }}"                 >> "$GITHUB_ENV"
+          echo "T_N3_RESULTS=${{ steps.t_n3.outputs.result }}"                   >> "$GITHUB_ENV"
 
       # Report to Classroom
       - name: Report grades
         uses: classroom-resources/autograding-grading-reporter@v1
         with:
-          runners: 't_invalid,t_for_loop,t_list,t_sum,t_n3'
+          runners: 't_invalid,t_while_loop,t_for_loop,t_list,t_sum,t_n3'
           token: ${{ github.token }}

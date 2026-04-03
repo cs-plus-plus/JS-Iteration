@@ -6,15 +6,18 @@
 // STEP 1: Ask the user for a positive number
 // Use prompt() with the text: "Enter a positive number:"
 // Store the result in a variable.
-// ============================================================
-
-
-// ============================================================
-// STEP 2: Convert and validate the input
 // Use parseInt() to convert the input to a whole number.
-// If the input is invalid (not a number or zero/negative),
-// alert exactly: "Invalid input"
-// Hint: Use isNaN() and check if the number is <= 0.
+// ============================================================
+
+
+// ============================================================
+// STEP 2: Validate the input using a WHILE LOOP
+// While the input is invalid (NaN, zero, or negative):
+//   - alert exactly: "Invalid input"
+//   - prompt again with the same text
+//   - convert the new input with parseInt()
+// After the loop, you are guaranteed to have a valid number.
+// Hint: The condition should be (isNaN(num) || num <= 0)
 // ============================================================
 
 
