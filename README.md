@@ -114,7 +114,6 @@ If the input is any of the following, alert exactly `Invalid input`:
 - Empty string or whitespace
 - Not a number (letters, symbols)
 - Zero or a negative number
-- A decimal number (like `3.5`)
 - User clicks Cancel (`null`)
 
 ### Output (two alerts)
@@ -248,11 +247,10 @@ console.log("Sum: " + sum);  // "Sum: 6"
 
 1. Start by getting the `prompt()` and validation working — test with invalid inputs first
 2. Use `parseInt()` to convert the input to a number, then check with `isNaN()`
-3. Remember that `parseInt("3.5")` returns `3`, but `"3.5"` should be invalid — compare `parseInt()` with `parseFloat()` to catch decimals
-4. Build your list string and sum in the **same** for loop to keep it simple
-5. For the comma-separated list, only add `", "` before a number when `i > 1`
-6. Make sure your `alert()` text matches **exactly** — `"Sum: 15"` not `"Sum:15"` or `"sum: 15"`
-7. Do not wrap your code in a function — it should run immediately when `script.js` loads
+3. Build your list string and sum in the **same** for loop to keep it simple
+4. For the comma-separated list, only add `", "` before a number when `i > 1`
+5. Make sure your `alert()` text matches **exactly** — `"Sum: 15"` not `"Sum:15"` or `"sum: 15"`
+6. Do not wrap your code in a function — it should run immediately when `script.js` loads
 
 ---
 
@@ -260,9 +258,6 @@ console.log("Sum: " + sum);  // "Sum: 6"
 
 **Q: Why can't I use document.getElementById or other DOM APIs?**
 This assignment tests pure JavaScript logic without the browser DOM. The autograder runs your code in Node.js, which does not have a DOM. If you use DOM APIs, your code will crash and all tests will fail.
-
-**Q: How do I handle decimal input like "3.5"?**
-Compare `parseInt(input)` with `parseFloat(input)`. If they are different, the input has a decimal and should be treated as invalid.
 
 **Q: My code works in the browser but fails the tests.**
 Make sure you are not using any DOM APIs. Also check that your alert text matches exactly — `"Sum: 15"` is not the same as `"Sum:15"` (missing space) or `"sum: 15"` (wrong case).

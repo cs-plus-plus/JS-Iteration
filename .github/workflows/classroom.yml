@@ -65,7 +65,7 @@ jobs:
           describe('Unit 8.4 – Iteration', () => {
 
             test('handles invalid input', () => {
-              const invalids = ['abc', '', ' ', '-1', '0', null, '3.5'];
+              const invalids = ['abc', '', ' ', '-1', '0', null];
               for (const input of invalids) {
                 const alerts = runWithPrompt(input);
                 expect(alerts.length).toBeGreaterThanOrEqual(1);

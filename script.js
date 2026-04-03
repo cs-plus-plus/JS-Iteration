@@ -12,9 +12,9 @@
 // ============================================================
 // STEP 2: Convert and validate the input
 // Use parseInt() to convert the input to a whole number.
-// If the input is invalid (empty, not a number, zero,
-// negative, or a decimal), alert exactly: "Invalid input"
-// Hint: Compare parseInt() and parseFloat() to catch decimals.
+// If the input is invalid (not a number or zero/negative),
+// alert exactly: "Invalid input"
+// Hint: Use isNaN() and check if the number is <= 0.
 // ============================================================
 
 
