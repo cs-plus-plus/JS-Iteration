@@ -115,7 +115,7 @@ jobs:
       # === Graded steps (sum to 100) ===
       - id: t_invalid
         name: handles invalid input
-        uses: classroom-resources/autograding-command-grader@v1
+        uses: cs-plus-plus/autograding-command-grader@v1
         with:
           test-name: handles invalid input
           setup-command: echo "ready"
@@ -125,7 +125,7 @@ jobs:
 
       - id: t_while_loop
         name: script.js uses a while loop
-        uses: classroom-resources/autograding-command-grader@v1
+        uses: cs-plus-plus/autograding-command-grader@v1
         with:
           test-name: script.js uses a while loop
           setup-command: echo "ready"
@@ -135,7 +135,7 @@ jobs:
 
       - id: t_for_loop
         name: script.js uses a for loop
-        uses: classroom-resources/autograding-command-grader@v1
+        uses: cs-plus-plus/autograding-command-grader@v1
         with:
           test-name: script.js uses a for loop
           setup-command: echo "ready"
@@ -145,7 +145,7 @@ jobs:
 
       - id: t_list
         name: lists numbers 1 to N
-        uses: classroom-resources/autograding-command-grader@v1
+        uses: cs-plus-plus/autograding-command-grader@v1
         with:
           test-name: lists numbers 1 to N
           setup-command: echo "ready"
@@ -155,7 +155,7 @@ jobs:
 
       - id: t_sum
         name: calculates correct sum
-        uses: classroom-resources/autograding-command-grader@v1
+        uses: cs-plus-plus/autograding-command-grader@v1
         with:
           test-name: calculates correct sum
           setup-command: echo "ready"
@@ -165,7 +165,7 @@ jobs:
 
       - id: t_n3
         name: works correctly for N=3
-        uses: classroom-resources/autograding-command-grader@v1
+        uses: cs-plus-plus/autograding-command-grader@v1
         with:
           test-name: works correctly for N=3
           setup-command: echo "ready"
@@ -238,7 +238,7 @@ jobs:
 
       # Report to Classroom
       - name: Report grades
-        uses: classroom-resources/autograding-grading-reporter@v1
+        uses: cs-plus-plus/autograding-grading-reporter@v1
         with:
           runners: 't_invalid,t_while_loop,t_for_loop,t_list,t_sum,t_n3'
           token: ${{ github.token }}
