@@ -170,10 +170,13 @@ Calculate the sum of all numbers from 1 to N and display it with `alert()` in th
 | `3` | `Sum: 6` |
 | `1` | `Sum: 1` |
 
+### Works for Any N — 20 points
+Your list and sum must come from the loop, not hard-coded text. The autograder runs your program again with `3` and expects `1, 2, 3` then `Sum: 6`.
+
 ### Code Quality — 20 points
-The autograder also checks your code:
-- **Uses a `while` loop** — static analysis checks your source code (10 points)
-- **Uses a `for` loop** — static analysis checks your source code (10 points)
+The autograder also checks your code (comment lines don't count, since the STEP comments mention these loops):
+- **Uses a `while` loop** (10 points)
+- **Uses a `for` loop** (10 points)
 
 ### Rules
 - Use a **`while` loop** for input validation — keep prompting until valid
@@ -189,8 +192,8 @@ The autograder also checks your code:
 | # | Test | Points | What the autograder checks |
 |---|------|--------|---------------------------|
 | 1 | Invalid input | 20 | `abc`, `""`, `" "`, `-1`, `0`, `null` → alert `Invalid input` then re-prompt |
-| 2 | Uses a while loop | 10 | Static analysis of script.js |
-| 3 | Uses a for loop | 10 | Static analysis of script.js |
+| 2 | Uses a while loop | 10 | Your code (not a comment) contains `while (` |
+| 3 | Uses a for loop | 10 | Your code (not a comment) contains `for (` |
 | 4 | Number list for N=5 | 20 | Alerts exactly `1, 2, 3, 4, 5` |
 | 5 | Sum for N=5 | 20 | Alerts exactly `Sum: 15` |
 | 6 | Works for N=3 | 20 | Alerts `1, 2, 3` then `Sum: 6` |
